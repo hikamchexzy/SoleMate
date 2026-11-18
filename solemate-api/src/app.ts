@@ -3,6 +3,7 @@ import express, { Application } from 'express';
 import cors from 'cors';
 import { notFoundHandler, errorHandler } from './middlewares/error.middleware';
 import authRoute from './routes/auth.route';
+import paketRoute from './routes/paket.route';
 
 export function createApp(): Application {
   const app = express();
@@ -20,9 +21,9 @@ export function createApp(): Application {
   });
 
     app.use('/api/auth', authRoute);
+    app.use('/api/paket', paketRoute);
     
   // Routes akan ditambahkan di sesi berikutnya:
-  // app.use('/api/paket', paketRoute);
   // app.use('/api/pesanan', pesananRoute);
   // app.use('/api/dashboard', dashboardRoute);
 
