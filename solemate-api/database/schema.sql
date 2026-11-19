@@ -1,11 +1,4 @@
--- ============================================================
--- SOLEMATE DATABASE SCHEMA (FINAL REVISI)
--- ============================================================
-DROP DATABASE IF EXISTS solemate_db;
-CREATE DATABASE solemate_db
-  CHARACTER SET utf8mb4
-  COLLATE utf8mb4_unicode_ci;
-USE solemate_db;
+USE defaultdb;
 
 -- 1. TABEL USERS
 CREATE TABLE users (
