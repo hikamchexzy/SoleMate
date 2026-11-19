@@ -5,6 +5,7 @@ import { notFoundHandler, errorHandler } from "./middlewares/error.middleware";
 import authRoute from "./routes/auth.route";
 import paketRoute from "./routes/paket.route";
 import pesananRoute from "./routes/pesanan.route";
+import dashboardRoute from "./routes/dashboard.route";
 
 export function createApp(): Application {
   const app = express();
@@ -24,9 +25,7 @@ export function createApp(): Application {
   app.use("/api/auth", authRoute);
   app.use("/api/paket", paketRoute);
   app.use("/api/pesanan", pesananRoute);
-
-  // Routes akan ditambahkan di sesi berikutnya:
-  // app.use('/api/dashboard', dashboardRoute);
+  app.use("/api/dashboard", dashboardRoute);
 
   app.use(notFoundHandler);
   app.use(errorHandler);
