@@ -4,7 +4,13 @@ import { success, error } from '../utils/response';
 
 export const buatPesanan = async (req: Request, res: Response): Promise<void> => {
   try {
-    const userId = req.user!.id; // Dari auth middleware
+    // Pastikan req.user tidak undefined
+    if (!req.user || !req.user.id) {
+      error(res, 'Sesi tidak valid, silakan login ulang.', 401);
+      return;
+    }
+
+    const userId = req.user.id; 
     const fotoUrl = req.file ? req.file.path : null;
     
     const insertId = await pesananService.createPesanan(userId, req.body, fotoUrl);
