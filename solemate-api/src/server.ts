@@ -7,7 +7,7 @@ import { env } from './config/env';
   await testConnection();
 
   const app = createApp();
-  app.listen(env.PORT, () => {
+  app.listen(env.PORT , '0.0.0.0' , () => {
     console.log(`🚀 Server berjalan di http://localhost:${env.PORT}`);
     console.log(`🌍 Mode: ${env.NODE_ENV}`);
   });
