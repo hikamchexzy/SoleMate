@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../services/auth.services.dart';
+import '../services/auth.service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'admin/admin.dashboard.screen.dart';
 import 'pelanggan/pelanggan.home.screen.dart';
