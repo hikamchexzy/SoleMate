@@ -7,7 +7,7 @@ import path from 'path';
 (async (): Promise<void> => {
   try {
 
-    const caPath = path.join(__dirname, 'ca.pem');
+    const caPath = path.join(__dirname,'ca.pem');
     const caCert = fs.existsSync(caPath) ? fs.readFileSync(caPath) : undefined;
 
     // Konfigurasi koneksi (membaca dari .env)
@@ -19,7 +19,8 @@ import path from 'path';
       database: process.env.DB_NAME || 'solemate_db', // Aiven pakai 'defaultdb'
       // Dukungan SSL untuk Aiven
       ssl: process.env.DB_SSL === 'true' ? { 
-        ca: caCert, rejectUnauthorized: true } : undefined,
+        ca: caCert, 
+        rejectUnauthorized: true } : undefined,
       multipleStatements: true, // WAJIB: agar banyak query sekaligus bisa jalan
     });
 
