@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../services/paket.service.dart';
 import '../../models/paket.model.dart';
-import '../login.screen.dart'; // Untuk tombol logout
+import 'buat.pesanan.screen.dart';
+import 'riwayat.pesanan.screen.dart'; 
+import 'profile.screen.dart'; 
 
 class PelangganHomeScreen extends StatefulWidget {
   @override
@@ -24,13 +26,18 @@ class _PelangganHomeScreenState extends State<PelangganHomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('SoleMate - Layanan'),
+        title: Text('SoleMate'),
         actions: [
           IconButton(
-            icon: Icon(Icons.logout),
+            icon: Icon(Icons.history),
             onPressed: () {
-              // Logout sederhana (kembali ke login)
-              Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => LoginScreen()));
+              Navigator.push(context, MaterialPageRoute(builder: (_) => RiwayatPesananScreen()));
+            },
+          ),
+          IconButton( 
+            icon: Icon(Icons.person),
+            onPressed: () {
+              Navigator.push(context, MaterialPageRoute(builder: (_) => ProfilScreen()));
             },
           )
         ],
@@ -58,21 +65,14 @@ class _PelangganHomeScreenState extends State<PelangganHomeScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    // Menampilkan Gambar dari Cloudinary
                     ClipRRect(
                       borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
                       child: paket.gambar != null 
-                        ? Image.network(
-                            paket.gambar!, 
-                            height: 150, 
-                            fit: BoxFit.cover,
+                        ? Image.network(paket.gambar!, height: 150, fit: BoxFit.cover,
                             errorBuilder: (context, error, stackTrace) => Container(
                               height: 150, color: Colors.grey[300], child: Icon(Icons.broken_image, size: 50),
-                            ),
-                          )
-                        : Container(
-                            height: 150, color: Colors.grey[300], child: Icon(Icons.image, size: 50),
-                          ),
+                            ))
+                        : Container(height: 150, color: Colors.grey[300], child: Icon(Icons.image, size: 50)),
                     ),
                     Padding(
                       padding: EdgeInsets.all(16),
@@ -95,9 +95,9 @@ class _PelangganHomeScreenState extends State<PelangganHomeScreen> {
                             width: double.infinity,
                             child: ElevatedButton(
                               onPressed: () {
-                                // Nanti kita arahkan ke halaman form pesanan
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(content: Text('Fitur pesan segera hadir!')),
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(builder: (_) => BuatPesananScreen(paket: paket)),
                                 );
                               },
                               child: Text('Pesan Sekarang'),

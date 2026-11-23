@@ -1,96 +1,97 @@
 import { Request, Response } from 'express';
 import * as pesananService from '../services/pesanan.service';
 import { success, error } from '../utils/response';
+import { StatusPesanan } from '../types/models';
 
-export const buatPesanan = async (req: Request, res: Response): Promise<void> => {
+export const getPesanan = async (req: Request, res: Response): Promise<void> => {
   try {
-    // Pastikan req.user tidak undefined
-    if (!req.user || !req.user.id) {
-      error(res, 'Sesi tidak valid, silakan login ulang.', 401);
-      return;
-    }
-
-    const userId = req.user.id; 
-    const fotoUrl = req.file ? req.file.path : null;
-    
-    const insertId = await pesananService.createPesanan(userId, req.body, fotoUrl);
-    success(res, 'Pesanan berhasil dibuat', { id: insertId }, 201);
-  } catch (err: any) {
-    error(res, err.message || 'Gagal membuat pesanan', 400);
-  }
-};
-
-export const daftarPesanan = async (req: Request, res: Response): Promise<void> => {
-  try {
-    let data;
-    // Jika pemilik, lihat semua pesanan. Jika pelanggan, lihat miliknya sendiri.
-    if (req.user!.role === 'pemilik') {
-      data = await pesananService.getAllPesanan();
-    } else {
-      data = await pesananService.getPesananByUser(req.user!.id);
-    }
+    const userId = req.user!.id;
+    const role = req.user!.role;
+    const data = await pesananService.getAllPesanan(userId, role);
     success(res, 'Berhasil mengambil daftar pesanan', data);
   } catch (err: any) {
-    error(res, 'Gagal mengambil pesanan', 500, err.message);
+    error(res, 'Gagal mengambil data pesanan', 500, err.message);
   }
 };
 
-export const detailPesanan = async (req: Request, res: Response): Promise<void> => {
+export const getDetailPesanan = async (req: Request, res: Response): Promise<void> => {
   try {
-    const data = await pesananService.getPesananById(Number(req.params.id));
+    const id = Number(req.params.id);
+    const data = await pesananService.getPesananById(id);
     if (!data) {
       error(res, 'Pesanan tidak ditemukan', 404);
       return;
     }
-    
-    // Keamanan: Pelanggan hanya boleh melihat pesanannya sendiri
-    if (req.user!.role === 'pelanggan' && data.user_id !== req.user!.id) {
-      error(res, 'Akses ditolak', 403);
-      return;
-    }
     success(res, 'Berhasil mengambil detail pesanan', data);
   } catch (err: any) {
-    error(res, 'Gagal mengambil pesanan', 500, err.message);
+    error(res, 'Gagal mengambil data pesanan', 500, err.message);
+  }
+};
+
+export const tambahPesanan = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const user_id = req.user!.id;
+    const { paket_id, catatan, no_hp_kontak, tingkat_kekotoran, total_harga } = req.body;
+    const fotoUrl = req.file ? req.file.path : null;
+
+    // --- VALIDASI NO HP ---
+    if (!no_hp_kontak) {
+      error(res, 'Nomor HP/WhatsApp wajib diisi', 400);
+      return;
+    }
+
+    // Regex memastikan hanya angka dan panjang 10-14 digit
+    const phoneRegex = /^[0-9]{10,14}$/;
+    if (!phoneRegex.test(no_hp_kontak)) {
+      error(res, 'Format Nomor HP tidak valid (harus angka, 10-14 digit)', 400);
+      return;
+    }
+
+    const insertId = await pesananService.createPesanan(
+      { user_id, paket_id, catatan, no_hp_kontak, tingkat_kekotoran, total_harga }, 
+      fotoUrl
+    );
+    
+    success(res, 'Pesanan berhasil dibuat', { id: insertId }, 201);
+  } catch (err: any) {
+    error(res, 'Gagal membuat pesanan', 400, err.message);
   }
 };
 
 export const ubahStatus = async (req: Request, res: Response): Promise<void> => {
   try {
+    const id = Number(req.params.id);
     const { status } = req.body;
-    if (!status) {
-      error(res, 'Status wajib diisi', 400);
-      return;
-    }
-
-    const isUpdated = await pesananService.updateStatusPesanan(Number(req.params.id), status);
+    
+    const isUpdated = await pesananService.updateStatusPesanan(id, status as StatusPesanan);
     if (!isUpdated) {
       error(res, 'Pesanan tidak ditemukan', 404);
       return;
     }
-    success(res, `Status pesanan berhasil diubah menjadi ${status}`);
+    success(res, 'Status pesanan berhasil diperbarui');
   } catch (err: any) {
-    error(res, err.message || 'Gagal mengubah status', 400);
+    error(res, 'Gagal mengupdate status', 400, err.message);
   }
 };
 
-export const uploadFilePesanan = async (req: Request, res: Response): Promise<void> => {
+export const uploadFotoBeforeAfter = async (req: Request, res: Response): Promise<void> => {
   try {
-    if (!req.file) {
-      error(res, 'File tidak ditemukan', 400);
+    const id = Number(req.params.id);
+    const { tipe } = req.body; // 'before' atau 'after'
+    const fotoUrl = req.file ? req.file.path : null;
+
+    if (!fotoUrl) {
+      error(res, 'File foto tidak ditemukan', 400);
       return;
     }
 
-    // 'field' didapat dari query parameter, misal: ?field=bukti_bayar
-    const field = req.query.field as string;
-    if (!field) {
-      error(res, 'Parameter "field" wajib diisi', 400);
+    const isUpdated = await pesananService.updateFotoPesanan(id, tipe, fotoUrl);
+    if (!isUpdated) {
+      error(res, 'Pesanan tidak ditemukan', 404);
       return;
     }
-
-    const fileUrl = req.file.path;
-    await pesananService.updateFileOrResi(Number(req.params.id), field, fileUrl);
-    success(res, 'File berhasil diunggah', { [field]: fileUrl });
+    success(res, `Foto ${tipe} berhasil diunggah`);
   } catch (err: any) {
-    error(res, err.message || 'Gagal upload file', 400);
+    error(res, 'Gagal mengunggah foto', 500, err.message);
   }
 };

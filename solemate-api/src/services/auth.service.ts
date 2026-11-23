@@ -39,3 +39,26 @@ export const loginUser = async (email: string, pass: string): Promise<User> => {
 
   return user;
 };
+
+export const updateProfil = async (
+  userId: number, 
+  nama: string, 
+  noHp: string, 
+  fotoUrl?: string // Tanda tanya (?) artinya opsional (boleh kosong)
+): Promise<boolean> => {
+  
+  let query = 'UPDATE users SET nama = ?, no_hp = ?';
+  const values: any[] = [nama, noHp];
+
+  // Jika ada foto baru yang diupload, tambahkan ke query
+  if (fotoUrl) {
+    query += ', foto_profil = ?';
+    values.push(fotoUrl);
+  }
+
+  query += ' WHERE id = ?';
+  values.push(userId);
+
+  const [result] = await pool.query<ResultSetHeader>(query, values);
+  return result.affectedRows > 0;
+};

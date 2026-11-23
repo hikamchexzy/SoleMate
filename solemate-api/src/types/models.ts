@@ -18,6 +18,7 @@ export interface User {
   role: Role;
   no_hp: string | null;
   alamat: string | null;
+  foto_profil: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -40,7 +41,8 @@ export interface Pesanan {
   paket_id: number;
   foto_sepatu: string | null;
   catatan: string | null;
-  alamat_jemput: string | null;
+  no_hp_kontak: string;
+  tingkat_kekotoran: 'ringan' | 'sedang' | 'berat';
   resi_masuk: string | null;
   bukti_bayar: string | null;
   resi_keluar: string | null;

@@ -1,84 +1,70 @@
 import { pool } from '../config/db';
+import { Pesanan, StatusPesanan } from '../types/models';
 import { RowDataPacket, ResultSetHeader } from 'mysql2';
 
-export const createPesanan = async (userId: number, data: any, fotoUrl: string | null): Promise<number> => {
-  const { paket_id, catatan, alamat_jemput, metode_pengantaran } = data;
+export const getAllPesanan = async (userId: number, role: string): Promise<Pesanan[]> => {
+  let query = `
+    SELECT p.*, u.nama as nama_pelanggan, pk.nama_paket 
+    FROM pesanan p 
+    JOIN users u ON p.user_id = u.id 
+    JOIN paket pk ON p.paket_id = pk.id
+  `;
+  const values: any[] = [];
 
-  // 1. Ambil harga paket dari database untuk menghitung total
-  const [paketRows] = await pool.query<RowDataPacket[]>(
-    'SELECT harga FROM paket WHERE id = ? AND is_active = 1', [paket_id]
-  );
-
-  if (paketRows.length === 0) throw new Error('Paket tidak ditemukan atau tidak aktif');
+  // Jika yang minta adalah pelanggan, hanya tampilkan pesanannya sendiri
+  if (role === 'pelanggan') {
+    query += ' WHERE p.user_id = ?';
+    values.push(userId);
+  }
   
-  const total_harga = paketRows[0].harga;
-  // Jika antar sendiri, status langsung menunggu konfirmasi. Jika kurir, sama.
-  const status = 'menunggu_konfirmasi';
+  query += ' ORDER BY p.tanggal_pesan DESC';
 
-  const [result] = await pool.query<ResultSetHeader>(
-    `INSERT INTO pesanan 
-    (user_id, paket_id, foto_sepatu, catatan, alamat_jemput, metode_pengantaran, total_harga, status) 
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-    [userId, paket_id, fotoUrl, catatan || null, alamat_jemput || null, metode_pengantaran, total_harga, status]
+  const [rows] = await pool.query<RowDataPacket[]>(query, values);
+  return rows as Pesanan[];
+};
+
+export const getPesananById = async (id: number): Promise<Pesanan | null> => {
+  const [rows] = await pool.query<RowDataPacket[]>(
+    `SELECT p.*, u.nama as nama_pelanggan, pk.nama_paket 
+     FROM pesanan p 
+     JOIN users u ON p.user_id = u.id 
+     JOIN paket pk ON p.paket_id = pk.id
+     WHERE p.id = ?`, [id]
   );
+  return rows.length > 0 ? (rows[0] as Pesanan) : null;
+};
 
+export const createPesanan = async (data: any, fotoUrl: string | null): Promise<number> => {
+  const { user_id, paket_id, catatan, no_hp_kontak, tingkat_kekotoran, total_harga } = data;
+  
+  const [result] = await pool.query<ResultSetHeader>(
+    'INSERT INTO pesanan (user_id, paket_id, catatan, no_hp_kontak, tingkat_kekotoran, total_harga, foto_sepatu) VALUES (?, ?, ?, ?, ?, ?, ?)',
+    [user_id, paket_id, catatan || null, no_hp_kontak, tingkat_kekotoran || 'sedang', total_harga, fotoUrl]
+  );
   return result.insertId;
 };
 
-export const getPesananByUser = async (userId: number): Promise<any[]> => {
-  const [rows] = await pool.query<RowDataPacket[]>(
-    `SELECT p.*, pk.nama_paket, pk.harga 
-     FROM pesanan p
-     JOIN paket pk ON p.paket_id = pk.id
-     WHERE p.user_id = ?
-     ORDER BY p.tanggal_pesan DESC`, [userId]
-  );
-  return rows;
-};
+export const updateStatusPesanan = async (id: number, status: StatusPesanan): Promise<boolean> => {
+  let query = 'UPDATE pesanan SET status = ?';
+  const values: any[] = [status];
 
-export const getAllPesanan = async (): Promise<any[]> => {
-  const [rows] = await pool.query<RowDataPacket[]>(
-    `SELECT p.*, pk.nama_paket, u.nama AS nama_pelanggan, u.no_hp 
-     FROM pesanan p
-     JOIN paket pk ON p.paket_id = pk.id
-     JOIN users u ON p.user_id = u.id
-     ORDER BY p.tanggal_pesan DESC`
-  );
-  return rows;
-};
-
-export const getPesananById = async (id: number): Promise<any | null> => {
-  const [rows] = await pool.query<RowDataPacket[]>(
-    `SELECT p.*, pk.nama_paket, u.nama AS nama_pelanggan, u.no_hp 
-     FROM pesanan p
-     JOIN paket pk ON p.paket_id = pk.id
-     JOIN users u ON p.user_id = u.id
-     WHERE p.id = ?`, [id]
-  );
-  return rows.length > 0 ? rows[0] : null;
-};
-
-// Admin update status manual (misal dari 'menunggu' ke 'diterima', atau 'dicuci', dll)
-export const updateStatusPesanan = async (id: number, status: string): Promise<boolean> => {
-  let tanggal_selesai = null;
-  if (status === 'selesai_diambil') {
-    tanggal_selesai = new Date();
+  // Jika statusnya selesai, catat tanggal selesainya
+  if (status === 'selesai' || status === 'selesai_diambil') {
+    query += ', tanggal_selesai = NOW()';
   }
 
-  const [result] = await pool.query<ResultSetHeader>(
-    'UPDATE pesanan SET status = ?, tanggal_selesai = COALESCE(?, tanggal_selesai) WHERE id = ?',
-    [status, tanggal_selesai, id]
-  );
+  query += ' WHERE id = ?';
+  values.push(id);
+
+  const [result] = await pool.query<ResultSetHeader>(query, values);
   return result.affectedRows > 0;
 };
 
-// Endpoint khusus update resi/foto/file yang tidak mengubah status
-export const updateFileOrResi = async (id: number, field: string, value: string): Promise<boolean> => {
-  const allowedFields = ['resi_masuk', 'resi_keluar', 'bukti_bayar', 'foto_before', 'foto_after'];
-  if (!allowedFields.includes(field)) throw new Error('Field tidak valid');
-
+// Fungsi untuk upload foto before/after oleh admin
+export const updateFotoPesanan = async (id: number, tipe: 'before' | 'after', fotoUrl: string): Promise<boolean> => {
+  const column = tipe === 'before' ? 'foto_before' : 'foto_after';
   const [result] = await pool.query<ResultSetHeader>(
-    `UPDATE pesanan SET ${field} = ? WHERE id = ?`, [value, id]
+    `UPDATE pesanan SET ${column} = ? WHERE id = ?`, [fotoUrl, id]
   );
   return result.affectedRows > 0;
 };

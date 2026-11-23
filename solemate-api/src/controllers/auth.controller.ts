@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { registerUser, loginUser } from '../services/auth.service';
+import { registerUser, loginUser, updateProfil } from '../services/auth.service';
 import { generateToken } from '../utils/jwt';
 import { success, error } from '../utils/response';
 
@@ -35,4 +35,26 @@ export const login = async (req: Request, res: Response): Promise<void> => {
 export const getMe = async (req: Request, res: Response): Promise<void> => {
   // req.user didapat dari auth.middleware
   success(res, 'Berhasil mendapatkan data profil', req.user);
+};
+
+export const updateUserProfil = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const userId = req.user!.id;
+    const { nama, no_hp } = req.body;
+    
+    // Cek apakah ada file foto yang diunggah lewat multer
+    const fotoUrl = req.file ? req.file.path : undefined;
+
+    if (!nama) {
+      error(res, 'Nama tidak boleh kosong', 400);
+      return;
+    }
+
+    // Panggil service dengan parameter lengkap
+    await updateProfil(userId, nama, no_hp || '', fotoUrl);
+    
+    success(res, 'Profil berhasil diperbarui');
+  } catch (err: any) {
+    error(res, 'Gagal memperbarui profil', 500, err.message);
+  }
 };

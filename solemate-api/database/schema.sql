@@ -12,7 +12,7 @@ CREATE TABLE users (
   created_at    DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at    DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   INDEX idx_users_role (role),
-  INDEX idx_users_email (email)
+  INDEX idx_users_email (emaill)
 ) ENGINE=InnoDB;
 
 -- 2. TABEL PAKET
@@ -86,3 +86,10 @@ INSERT INTO users (nama, email, password, role, no_hp, alamat) VALUES
 -- Akun Pelanggan: pelanggan@solemate.com | Pass: Pelanggan123!
 INSERT INTO users (nama, email, password, role, no_hp, alamat) VALUES
 ('Setiawan', 'Setiawan@gmail.com', '$2b$10$zxABxEkuJ58NAkhvnWVdHeDk03BSIF70yf2qporOazUDnvhkfwrju', 'pelanggan', '089876543210', 'Jl. Melati No. 10, Jakarta');
+
+ALTER TABLE pesanan 
+DROP COLUMN metode_pengantaran,
+DROP COLUMN alamat_jemput,
+ADD COLUMN no_hp_kontak VARCHAR(20) NOT NULL AFTER catatan,
+ADD COLUMN tingkat_kekotoran ENUM('ringan', 'sedang', 'berat') NOT NULL DEFAULT 'sedang' AFTER no_hp_kontak;
+ALTER TABLE users ADD COLUMN foto_profil VARCHAR(255) DEFAULT NULL AFTER alamat;

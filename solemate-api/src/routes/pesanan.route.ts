@@ -6,33 +6,33 @@ import { upload } from '../middlewares/upload.middleware';
 
 const router = Router();
 
-router.use(requireAuth); // Semua rute pesanan wajib login
+// Rute untuk Pelanggan & Admin (Melihat data)
+router.get('/', requireAuth, pesananController.getPesanan);
+router.get('/:id', requireAuth, pesananController.getDetailPesanan);
 
-// Pelanggan membuat pesanan (Upload foto sepatu)
+// Rute KHUSUS Pelanggan (Membuat pesanan)
 router.post(
-  '/', 
-  requireRole('pelanggan'), 
-  upload.single('foto_sepatu'), 
-  pesananController.buatPesanan
+  '/',
+  requireAuth,
+  requireRole('pelanggan'),
+  upload.single('foto_sepatu'), // <-- Field form-data di Flutter harus 'foto_sepatu'
+  pesananController.tambahPesanan
 );
 
-// Lihat pesanan (Pelanggan melihat miliknya, Admin melihat semua)
-router.get('/', pesananController.daftarPesanan);
-router.get('/:id', pesananController.detailPesanan);
-
-// Admin ubah status
+// Rute KHUSUS Admin (Mengubah status & Upload Foto)
 router.put(
-  '/:id/status', 
-  requireRole('pemilik'), 
+  '/:id/status',
+  requireAuth,
+  requireRole('pemilik'),
   pesananController.ubahStatus
 );
 
-// Endpoint generic untuk upload file (before/after/bukti bayar)
-// Pelanggan bisa upload bukti_bayar, Admin bisa upload foto_before/foto_after
 router.put(
-  '/:id/upload', 
-  upload.single('file'), 
-  pesananController.uploadFilePesanan
+  '/:id/foto',
+  requireAuth,
+  requireRole('pemilik'),
+  upload.single('foto'), // <-- Field form-data untuk upload foto
+  pesananController.uploadFotoBeforeAfter
 );
 
 export default router;
