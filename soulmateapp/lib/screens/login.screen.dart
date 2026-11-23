@@ -3,6 +3,7 @@ import '../services/auth.service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'admin/admin.dashboard.screen.dart';
 import 'pelanggan/pelanggan.home.screen.dart';
+import 'register.screen.dart';
 
 
 class LoginScreen extends StatefulWidget {
@@ -81,6 +82,16 @@ class _LoginScreenState extends State<LoginScreen> {
                 onPressed: _isLoading ? null : _handleLogin,
                 child: _isLoading ? CircularProgressIndicator() : Text('Login'),
                 style: ElevatedButton.styleFrom(padding: EdgeInsets.symmetric(vertical: 16)),
+              ),
+              SizedBox(height: 16),
+              TextButton(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => RegisterScreen()),
+                  );
+                },
+                child: Text('Belum punya akun? Daftar di sini'),
               ),
             ],
           ),

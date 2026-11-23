@@ -37,6 +37,37 @@ class AuthService {
     }
   }
 
+  Future<String?> register(
+    String nama,
+    String email,
+    String password,
+    String noHp,
+  ) async {
+    try {
+      final response = await http.post(
+        Uri.parse('${ApiConfig.baseUrl}/auth/register'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'nama': nama,
+          'email': email,
+          'password': password,
+          'no_hp': noHp,
+        }),
+      );
+
+      final data = jsonDecode(response.body);
+
+      if (response.statusCode == 201) {
+        return null; // Null artinya sukses (tidak ada error)
+      } else {
+        return data['message'] ??
+            'Gagal mendaftar'; // Kembalikan pesan error dari backend
+      }
+    } catch (e) {
+      return 'Koneksi error: $e';
+    }
+  }
+
   Future<bool> simpanProfil({
     required String nama,
     required String noHp,
