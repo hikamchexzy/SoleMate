@@ -4,7 +4,10 @@ import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../models/paket.model.dart';
+import '../../services/auth.service.dart';
 import '../../services/pesanan.service.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/intl.dart';
 
 class BuatPesananScreen extends StatefulWidget {
   final Paket paket;
@@ -15,29 +18,33 @@ class BuatPesananScreen extends StatefulWidget {
 }
 
 class _BuatPesananScreenState extends State<BuatPesananScreen> {
-  // 1. Tambahkan Form Key untuk validasi
   final _formKey = GlobalKey<FormState>();
-  
   final _noHpController = TextEditingController();
   final _catatanController = TextEditingController();
   final _pesananService = PesananService();
+  final _authService = AuthService();
   final _picker = ImagePicker();
 
   File? _fotoSepatu;
   String _tingkatKekotoran = 'sedang'; // Default
   bool _isLoading = false;
+  bool _isDataLoaded = false; // Untuk memastikan data No HP sudah dimuat
 
   @override
   void initState() {
     super.initState();
-    // 2. Panggil fungsi untuk mengambil No HP dari Profil
     _loadNoHp();
   }
 
   Future<void> _loadNoHp() async {
+    await _authService.getProfil();
+    if (!mounted)
+      return; // Pastikan widget masih ada di tree sebelum memanggil setState
     final prefs = await SharedPreferences.getInstance();
+    if (!mounted) return;
     setState(() {
       _noHpController.text = prefs.getString('no_hp') ?? '';
+      _isDataLoaded = true; // Data sudah dimuat
     });
   }
 
@@ -53,7 +60,7 @@ class _BuatPesananScreenState extends State<BuatPesananScreen> {
           child: Wrap(
             children: <Widget>[
               ListTile(
-                leading: Icon(Icons.camera_alt, color: Colors.blue),
+                leading: Icon(Icons.camera_alt, color: Colors.black),
                 title: Text('Ambil dari Kamera'),
                 onTap: () {
                   Navigator.pop(context); // Tutup bottom sheet
@@ -86,18 +93,18 @@ class _BuatPesananScreenState extends State<BuatPesananScreen> {
         setState(() => _fotoSepatu = File(pickedFile.path));
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Gagal mengambil gambar: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Gagal mengambil gambar: $e')));
     }
   }
 
   void _submitPesanan() async {
     // Validasi jika foto belum diunggah
     if (_fotoSepatu == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Harap unggah foto sepatu!')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Harap unggah foto sepatu!')));
       return;
     }
 
@@ -117,9 +124,9 @@ class _BuatPesananScreenState extends State<BuatPesananScreen> {
     setState(() => _isLoading = false);
 
     if (success) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Pesanan berhasil dibuat!')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Pesanan berhasil dibuat!')));
       Navigator.pop(context); // Kembali ke halaman sebelumnya
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -133,44 +140,95 @@ class _BuatPesananScreenState extends State<BuatPesananScreen> {
     return Scaffold(
       appBar: AppBar(title: Text('Buat Pesanan')),
       body: SingleChildScrollView(
-        padding: EdgeInsets.all(16),
-        child: Form( // 3. Bungkus dengan widget Form
+        padding: EdgeInsets.all(24), // Padding diperlebar
+        child: Form(
           key: _formKey,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text(
-                'Paket: ${widget.paket.namaPaket}',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              // Info Paket (Desain Card)
+              Container(
+                padding: EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.check_circle, color: Colors.green),
+                    SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        widget.paket.namaPaket,
+                        style: GoogleFonts.urbanist(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    Text(
+                      NumberFormat.currency(
+                        locale: 'id_ID',
+                        symbol: 'Rp ',
+                        decimalDigits: 0,
+                      ).format(widget.paket.harga),
+                      style: GoogleFonts.urbanist(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black,
+                      ),
+                    ),
+                  ],
+                ),
               ),
-              SizedBox(height: 16),
-              
-              // Upload Foto
+              SizedBox(height: 24),
+
+              // Upload Foto (Kotak Putih Bergaris Putus-putus)
               GestureDetector(
                 onTap: _tampilkanPilihanFoto,
                 child: Container(
-                  height: 150,
+                  height: 180,
                   decoration: BoxDecoration(
-                    color: Colors.grey[200],
-                    border: Border.all(color: Colors.grey),
-                    borderRadius: BorderRadius.circular(8),
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(24),
+                    border: Border.all(color: Colors.black26, width: 2),
                   ),
                   child: _fotoSepatu != null
                       ? ClipRRect(
-                          borderRadius: BorderRadius.circular(8),
-                          child: Image.file(_fotoSepatu!, fit: BoxFit.cover, width: double.infinity),
+                          borderRadius: BorderRadius.circular(22),
+                          child: Image.file(
+                            _fotoSepatu!,
+                            fit: BoxFit.cover,
+                            width: double.infinity,
+                          ),
                         )
                       : Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(Icons.camera_alt, size: 50, color: Colors.grey),
-                            SizedBox(height: 8),
-                            Text('Unggah Foto Sepatu', style: TextStyle(color: Colors.grey[700])),
+                            Container(
+                              padding: EdgeInsets.all(16),
+                              decoration: BoxDecoration(
+                                color: Colors.grey[200],
+                                shape: BoxShape.circle,
+                              ),
+                              child: Icon(
+                                Icons.camera_alt,
+                                size: 40,
+                                color: Colors.black87,
+                              ),
+                            ),
+                            SizedBox(height: 12),
+                            Text(
+                              'Ketuk untuk unggah foto sepatu',
+                              style: GoogleFonts.urbanist(
+                                color: Colors.grey[700],
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
                           ],
                         ),
                 ),
               ),
-              SizedBox(height: 16),
+              SizedBox(height: 24),
 
               // Input No HP
               TextFormField(
@@ -182,35 +240,38 @@ class _BuatPesananScreenState extends State<BuatPesananScreen> {
                 ],
                 decoration: InputDecoration(
                   labelText: 'Nomor HP / WhatsApp',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.phone),
+                  prefixIcon: Icon(Icons.phone_outlined),
                   hintText: 'Contoh: 081234567890',
                 ),
                 validator: (value) {
-                  if (value == null || value.isEmpty) {
+                  if (value == null || value.isEmpty)
                     return 'Nomor HP wajib diisi!';
-                  }
-                  if (value.length < 10) {
-                    return 'Nomor HP minimal 10 digit!';
-                  }
+                  if (value.length < 10) return 'Nomor HP minimal 10 digit!';
                   return null;
                 },
               ),
               SizedBox(height: 16),
-              
+
               // Pilihan Tingkat Kekotoran
-              Text('Tingkat Kekotoran Sepatu:', style: TextStyle(fontWeight: FontWeight.bold)),
-              SizedBox(height: 8),
               DropdownButtonFormField<String>(
                 value: _tingkatKekotoran,
                 decoration: InputDecoration(
-                  border: OutlineInputBorder(),
-                  contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+                  labelText: 'Tingkat Kekotoran',
+                  prefixIcon: Icon(Icons.wash_outlined),
                 ),
                 items: [
-                  DropdownMenuItem(value: 'ringan', child: Text('Ringan (Debu saja)')),
-                  DropdownMenuItem(value: 'sedang', child: Text('Sedang (Noda biasa)')),
-                  DropdownMenuItem(value: 'berat', child: Text('Berat (Noda membandel)')),
+                  DropdownMenuItem(
+                    value: 'ringan',
+                    child: Text('Ringan (Debu saja)'),
+                  ),
+                  DropdownMenuItem(
+                    value: 'sedang',
+                    child: Text('Sedang (Noda biasa)'),
+                  ),
+                  DropdownMenuItem(
+                    value: 'berat',
+                    child: Text('Berat (Noda membandel)'),
+                  ),
                 ],
                 onChanged: (val) => setState(() => _tingkatKekotoran = val!),
               ),
@@ -220,29 +281,25 @@ class _BuatPesananScreenState extends State<BuatPesananScreen> {
               TextFormField(
                 controller: _catatanController,
                 decoration: InputDecoration(
-                  labelText: 'Catatan Tambahan (Opsional)', 
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.note),
+                  labelText: 'Catatan Tambahan (Opsional)',
+                  prefixIcon: Icon(Icons.note_outlined),
                 ),
                 maxLines: 2,
               ),
-              SizedBox(height: 24),
+              SizedBox(height: 32),
 
-              // Tombol Submit dengan validasi Form
+              // Tombol Submit
               ElevatedButton(
-                onPressed: _isLoading ? null : () {
-                  // 4. Validasi form sebelum memanggil submit
-                  if (_formKey.currentState!.validate()) {
-                    _submitPesanan();
-                  }
-                },
-                child: _isLoading 
-                  ? CircularProgressIndicator(color: Colors.white) 
-                  : Text('Konfirmasi Pesanan', style: TextStyle(fontSize: 16)),
-                style: ElevatedButton.styleFrom(
-                  padding: EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))
-                ),
+                onPressed: _isLoading
+                    ? null
+                    : () {
+                        if (_formKey.currentState!.validate()) {
+                          _submitPesanan();
+                        }
+                      },
+                child: _isLoading
+                    ? CircularProgressIndicator(color: Colors.white)
+                    : Text('Konfirmasi Pesanan'),
               ),
             ],
           ),

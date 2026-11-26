@@ -5,6 +5,48 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../config/api.config.dart';
 
 class AuthService {
+  Future<Map<String, dynamic>?> getProfil() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('token');
+
+      final response = await http.get(
+        Uri.parse('${ApiConfig.baseUrl}/auth/me'),
+        headers: {'Authorization': 'Bearer $token'},
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final user = data['data'];
+        if (user is Map<String, dynamic>) {
+          if (user['nama'] != null) {
+            await prefs.setString('nama', user['nama'].toString());
+          }
+          if (user['email'] != null) {
+            await prefs.setString('email', user['email'].toString());
+          }
+          if (user['no_hp'] != null) {
+            await prefs.setString('no_hp', user['no_hp'].toString());
+          } else {
+            await prefs.remove('no_hp');
+          }
+          if (user['foto_profil'] != null) {
+            await prefs.setString(
+              'foto_profil',
+              user['foto_profil'].toString(),
+            );
+          } else {
+            await prefs.remove('foto_profil');
+          }
+          return user;
+        }
+      }
+      return null;
+    } catch (e) {
+      return null;
+    }
+  }
+
   Future<bool> login(String email, String password) async {
     try {
       final response = await http.post(
@@ -23,11 +65,18 @@ class AuthService {
         await prefs.setString('role', user['role']);
         await prefs.setString('nama', user['nama']); // <-- Simpan Nama
         await prefs.setString('email', user['email']); // <-- Simpan Email
+        if (user['no_hp'] != null) {
+          await prefs.setString('no_hp', user['no_hp'].toString());
+        } else {
+          await prefs.remove('no_hp');
+        }
         if (user['foto_profil'] != null) {
           await prefs.setString(
             'foto_profil',
             user['foto_profil'],
           ); // <-- Simpan Foto (jika ada)
+        } else {
+          await prefs.remove('foto_profil');
         }
         return true;
       }

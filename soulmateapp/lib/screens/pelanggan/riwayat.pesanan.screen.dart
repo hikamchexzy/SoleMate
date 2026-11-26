@@ -10,7 +10,11 @@ class RiwayatPesananScreen extends StatefulWidget {
 class _RiwayatPesananScreenState extends State<RiwayatPesananScreen> {
   final PesananService _pesananService = PesananService();
   late Future<List<dynamic>> _futurePesanan;
-  final currencyFormatter = NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0);
+  final currencyFormatter = NumberFormat.currency(
+    locale: 'id_ID',
+    symbol: 'Rp ',
+    decimalDigits: 0,
+  );
 
   @override
   void initState() {
@@ -21,12 +25,18 @@ class _RiwayatPesananScreenState extends State<RiwayatPesananScreen> {
   // Fungsi untuk mewarnai status agar mudah dibaca
   Color _getStatusColor(String status) {
     switch (status) {
-      case 'menunggu_konfirmasi': return Colors.orange;
-      case 'diterima': return Colors.blue;
-      case 'dicuci': return Colors.purple;
-      case 'selesai': return Colors.green;
-      case 'selesai_diambil': return Colors.teal;
-      default: return Colors.grey;
+      case 'menunggu_konfirmasi':
+        return Colors.orange;
+      case 'diterima':
+        return Colors.black;
+      case 'dicuci':
+        return Colors.purple;
+      case 'selesai':
+        return Colors.green;
+      case 'selesai_diambil':
+        return Colors.teal;
+      default:
+        return Colors.grey;
     }
   }
 
@@ -51,15 +61,24 @@ class _RiwayatPesananScreenState extends State<RiwayatPesananScreen> {
             if (snapshot.connectionState == ConnectionState.waiting) {
               return Center(child: CircularProgressIndicator());
             } else if (snapshot.hasError) {
-              return Center(child: Text('Gagal memuat data: ${snapshot.error}'));
+              return Center(
+                child: Text('Gagal memuat data: ${snapshot.error}'),
+              );
             } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
               return Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.shopping_bag_outlined, size: 80, color: Colors.grey),
+                    Icon(
+                      Icons.shopping_bag_outlined,
+                      size: 80,
+                      color: Colors.grey,
+                    ),
                     SizedBox(height: 16),
-                    Text('Belum ada riwayat pesanan.', style: TextStyle(fontSize: 16, color: Colors.grey)),
+                    Text(
+                      'Belum ada riwayat pesanan.',
+                      style: TextStyle(fontSize: 16, color: Colors.grey),
+                    ),
                   ],
                 ),
               );
@@ -72,7 +91,9 @@ class _RiwayatPesananScreenState extends State<RiwayatPesananScreen> {
                 final pesanan = snapshot.data![index];
                 return Card(
                   margin: EdgeInsets.only(bottom: 16),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                   child: Padding(
                     padding: EdgeInsets.all(16),
                     child: Column(
@@ -84,12 +105,20 @@ class _RiwayatPesananScreenState extends State<RiwayatPesananScreen> {
                           children: [
                             Text(
                               pesanan['nama_paket'],
-                              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                             Container(
-                              padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              padding: EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 4,
+                              ),
                               decoration: BoxDecoration(
-                                color: _getStatusColor(pesanan['status']).withOpacity(0.2),
+                                color: _getStatusColor(
+                                  pesanan['status'],
+                                ).withOpacity(0.2),
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: Text(
@@ -104,14 +133,21 @@ class _RiwayatPesananScreenState extends State<RiwayatPesananScreen> {
                           ],
                         ),
                         Divider(),
-                        
+
                         // Baris 2: Info Detail
-                        Text('Total: ${currencyFormatter.format(pesanan['total_harga'])}', style: TextStyle(fontWeight: FontWeight.bold)),
+                        Text(
+                          'Total: ${currencyFormatter.format(pesanan['total_harga'])}',
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
                         SizedBox(height: 4),
-                        Text('Kekotoran: ${pesanan['tingkat_kekotoran'].toString().toUpperCase()}'),
+                        Text(
+                          'Kekotoran: ${pesanan['tingkat_kekotoran'].toString().toUpperCase()}',
+                        ),
                         SizedBox(height: 4),
-                        Text('Tanggal: ${DateFormat('dd MMM yyyy, HH:mm').format(DateTime.parse(pesanan['tanggal_pesan']))}'),
-                        
+                        Text(
+                          'Tanggal: ${DateFormat('dd MMM yyyy, HH:mm').format(DateTime.parse(pesanan['tanggal_pesan']))}',
+                        ),
+
                         // Opsional: Tampilkan Foto Sepatu Awal (jika ada)
                         if (pesanan['foto_sepatu'] != null) ...[
                           SizedBox(height: 12),

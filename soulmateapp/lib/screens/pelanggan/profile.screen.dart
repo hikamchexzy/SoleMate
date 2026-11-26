@@ -4,6 +4,7 @@ import 'package:flutter/services.dart'; // Wajib untuk inputFormatters
 import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../services/auth.service.dart';
+import '../login.screen.dart';
 
 class ProfilScreen extends StatefulWidget {
   @override
@@ -29,12 +30,18 @@ class _ProfilScreenState extends State<ProfilScreen> {
   }
 
   Future<void> _loadUserData() async {
-    final prefs = await SharedPreferences.getInstance();
+    await _authService.getProfil();
+    if (!mounted) return;
+
+    final updatedPrefs = await SharedPreferences.getInstance();
+    if (!mounted) return;
+
     setState(() {
-      _namaController.text = prefs.getString('nama') ?? 'Pelanggan';
-      _emailController.text = prefs.getString('email') ?? '';
-      _noHpController.text = prefs.getString('no_hp') ?? ''; // Ambil No HP
-      _fotoProfilUrl = prefs.getString('foto_profil');
+      _namaController.text = updatedPrefs.getString('nama') ?? 'Pelanggan';
+      _emailController.text = updatedPrefs.getString('email') ?? '';
+      _noHpController.text =
+          updatedPrefs.getString('no_hp') ?? ''; // Ambil No HP
+      _fotoProfilUrl = updatedPrefs.getString('foto_profil');
     });
   }
 
@@ -49,7 +56,7 @@ class _ProfilScreenState extends State<ProfilScreen> {
         child: Wrap(
           children: [
             ListTile(
-              leading: Icon(Icons.camera_alt, color: Colors.blue),
+              leading: Icon(Icons.camera_alt, color: Colors.black),
               title: Text('Ambil dari Kamera'),
               onTap: () {
                 Navigator.pop(context);
@@ -93,14 +100,46 @@ class _ProfilScreenState extends State<ProfilScreen> {
     if (!mounted) return;
 
     if (success) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Profil berhasil diperbarui!')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Profil berhasil diperbarui!')));
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Gagal memperbarui profil.')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Gagal memperbarui profil.')));
     }
+  }
+
+  void _logout() {
+    showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text('Konfirmasi Logout'),
+        content: Text('Apakah Anda yakin ingin keluar dari aplikasi?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: Text('Batal', style: TextStyle(color: Colors.grey)),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              final prefs = await SharedPreferences.getInstance();
+              await prefs.clear();
+
+              if (!mounted || !dialogContext.mounted) return;
+              Navigator.pop(dialogContext);
+              Navigator.pushAndRemoveUntil(
+                context,
+                MaterialPageRoute(builder: (_) => LoginScreen()),
+                (route) => false,
+              );
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            child: Text('Logout'),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -111,28 +150,60 @@ class _ProfilScreenState extends State<ProfilScreen> {
         padding: EdgeInsets.all(24),
         child: Column(
           children: [
-            // Tampilan Foto Profil
+            // Avatar Foto Profil
             GestureDetector(
               onTap: _pilihFoto,
-              child: CircleAvatar(
-                radius: 60,
-                backgroundColor: Colors.grey[300],
-                backgroundImage: _fotoBaru != null
-                    ? FileImage(_fotoBaru!) as ImageProvider
-                    : (_fotoProfilUrl != null
-                          ? NetworkImage(_fotoProfilUrl!)
-                          : null),
-                child: (_fotoBaru == null && _fotoProfilUrl == null)
-                    ? Icon(Icons.person, size: 60, color: Colors.white)
-                    : null,
+              child: Center(
+                child: Stack(
+                  children: [
+                    Container(
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.white, width: 4),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.1),
+                            blurRadius: 10,
+                          ),
+                        ],
+                      ),
+                      child: CircleAvatar(
+                        radius: 60,
+                        backgroundColor: Colors.grey[200],
+                        backgroundImage: _fotoBaru != null
+                            ? FileImage(_fotoBaru!) as ImageProvider
+                            : (_fotoProfilUrl != null
+                                  ? NetworkImage(_fotoProfilUrl!)
+                                  : null),
+                        child: (_fotoBaru == null && _fotoProfilUrl == null)
+                            ? Icon(
+                                Icons.person,
+                                size: 60,
+                                color: Colors.black87,
+                              )
+                            : null,
+                      ),
+                    ),
+                    Positioned(
+                      bottom: 0,
+                      right: 0,
+                      child: Container(
+                        padding: EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Color(0xFFF59E0B),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          Icons.camera_alt,
+                          color: Colors.white,
+                          size: 20,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
-            SizedBox(height: 8),
-            Text(
-              'Klik foto untuk mengubah',
-              style: TextStyle(color: Colors.grey, fontSize: 12),
-            ),
-
             SizedBox(height: 32),
 
             // Form Nama
@@ -140,8 +211,7 @@ class _ProfilScreenState extends State<ProfilScreen> {
               controller: _namaController,
               decoration: InputDecoration(
                 labelText: 'Nama Lengkap',
-                border: OutlineInputBorder(),
-                prefixIcon: Icon(Icons.person),
+                prefixIcon: Icon(Icons.person_outline),
               ),
             ),
             SizedBox(height: 16),
@@ -152,15 +222,13 @@ class _ProfilScreenState extends State<ProfilScreen> {
               readOnly: true,
               decoration: InputDecoration(
                 labelText: 'Email',
-                border: OutlineInputBorder(),
-                prefixIcon: Icon(Icons.email),
-                filled: true,
-                fillColor: Colors.grey[100],
+                prefixIcon: Icon(Icons.email_outlined),
+                fillColor: Colors.grey[200], // Lebih gelap karena readonly
               ),
             ),
             SizedBox(height: 16),
 
-            // Form Nomor HP (Baru)
+            // Form Nomor HP
             TextField(
               controller: _noHpController,
               keyboardType: TextInputType.phone,
@@ -170,12 +238,9 @@ class _ProfilScreenState extends State<ProfilScreen> {
               ],
               decoration: InputDecoration(
                 labelText: 'Nomor HP / WhatsApp',
-                border: OutlineInputBorder(),
-                prefixIcon: Icon(Icons.phone),
-                hintText: 'Contoh: 081234567890',
+                prefixIcon: Icon(Icons.phone_outlined),
               ),
             ),
-
             SizedBox(height: 32),
 
             // Tombol Simpan
@@ -183,12 +248,31 @@ class _ProfilScreenState extends State<ProfilScreen> {
               width: double.infinity,
               child: ElevatedButton(
                 onPressed: _isLoading ? null : _simpanProfil,
-                style: ElevatedButton.styleFrom(
-                  padding: EdgeInsets.symmetric(vertical: 16),
-                ),
                 child: _isLoading
                     ? CircularProgressIndicator(color: Colors.white)
                     : Text('Simpan Perubahan'),
+              ),
+            ),
+            SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: _logout,
+                icon: Icon(Icons.logout, color: Colors.red),
+                label: Text(
+                  'Logout Akun',
+                  style: TextStyle(
+                    color: Colors.red,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                style: OutlinedButton.styleFrom(
+                  padding: EdgeInsets.symmetric(vertical: 16),
+                  side: BorderSide(color: Colors.red.withOpacity(0.5)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                ),
               ),
             ),
           ],
