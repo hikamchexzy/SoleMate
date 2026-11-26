@@ -3,7 +3,6 @@ import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../config/api.config.dart';
-import '../models/paket.model.dart';
 
 class PesananService {
   Future<List<dynamic>> getRiwayatPesanan() async {

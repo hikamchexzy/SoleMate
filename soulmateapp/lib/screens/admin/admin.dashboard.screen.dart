@@ -120,7 +120,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                             'Sedang Dicuci',
                             '${data['sedang_dicuci'] ?? 0} Psn',
                             Icons.local_laundry_service,
-                            Colors.blue!,
+                            Colors.blue[100]!, 
                             Colors.black87,
                           ),
                         ),
