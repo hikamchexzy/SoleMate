@@ -40,6 +40,15 @@ export const loginUser = async (email: string, pass: string): Promise<User> => {
   return user;
 };
 
+export const getUserById = async (userId: number): Promise<User | null> => {
+  const [rows] = await pool.query<RowDataPacket[]>(
+    'SELECT id, nama, email, role, no_hp, alamat, foto_profil FROM users WHERE id = ?',
+    [userId]
+  );
+
+  return rows.length > 0 ? (rows[0] as User) : null;
+};
+
 export const updateProfil = async (
   userId: number, 
   nama: string, 

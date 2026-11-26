@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { registerUser, loginUser, updateProfil } from '../services/auth.service';
+import { registerUser, loginUser, updateProfil, getUserById } from '../services/auth.service';
 import { generateToken } from '../utils/jwt';
 import { success, error } from '../utils/response';
 
@@ -33,8 +33,17 @@ export const login = async (req: Request, res: Response): Promise<void> => {
 };
 
 export const getMe = async (req: Request, res: Response): Promise<void> => {
-  // req.user didapat dari auth.middleware
-  success(res, 'Berhasil mendapatkan data profil', req.user);
+  try {
+    const user = await getUserById(req.user!.id);
+    if (!user) {
+      error(res, 'Pengguna tidak ditemukan', 404);
+      return;
+    }
+
+    success(res, 'Berhasil mendapatkan data profil', user);
+  } catch (err: any) {
+    error(res, 'Gagal mendapatkan data profil', 500, err.message);
+  }
 };
 
 export const updateUserProfil = async (req: Request, res: Response): Promise<void> => {
